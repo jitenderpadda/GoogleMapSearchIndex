@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Set;
@@ -292,6 +291,7 @@ public class QueryEngine
 
     // add results,
     // if the result size is greater than the threshold, return the objects
+    System.out.println("prefixResult---"+prefixResult);
     this.addResults( resultMap, prefixResult, memObjectMap, QueryType.PREFIX_RANGE );
     
     long spStop = System.currentTimeMillis();
@@ -520,6 +520,7 @@ public class QueryEngine
       HashMap< SecondLevelKey, TreeSet< Integer >> memHilbPosQgramInvertedMap,
       HashMap< String, TreeSet< Integer >> memHilbQgramTokenInvertedMap )
   {
+    //System.out.println("PrefixRangeQuery");
     // read infrequent q-gram inverted index
 	  this.readInfrequentInvertedIndex(query, memInfreqPosQgramInvertedMap, memInfreqQgramTokenInvertedMap, hasReadInfrequentToken, hasInfrequentPosQgram, hasInfrequentQgramToken);
     
@@ -527,13 +528,14 @@ public class QueryEngine
 	  NavigableSet<Integer> infrequentJoinedResult = null;
     if ( hasInfrequentPosQgram.isTrue() || hasInfrequentQgramToken.isTrue() )
     {
+      //System.out.println("Yes Infrequent Qgrams");
       // if has infrequent positional q-gram, 
     	if(hasInfrequentPosQgram.isTrue()){
-    		
+    		infrequentJoinedResult = this.infrequentQgramExactJoin(memInfreqPosQgramInvertedMap.values());
     	}
       // else if has the infrequent q-gram token,
     	else if(hasInfrequentQgramToken.isTrue()){
-    		infrequentJoinedResult = this.infrequentQgramExactJoin(memInfreqPosQgramInvertedMap.values());
+    		infrequentJoinedResult = this.infrequentQgramExactJoin(memInfreqQgramTokenInvertedMap.values());
     	}
       // check the join result
     	if(infrequentJoinedResult !=null){
@@ -545,6 +547,7 @@ public class QueryEngine
      // if there is no infrequent q-grams
     else
     {
+      //System.out.println("No Infrequent Qgrams");
       // get the intersecting node statistics  
     	quadtree.getIntersectingNodeStatistic(query._queryRegion, intersectingNodeStatistic, sparseThreshold);
     	hasRetrievedIntersectingNodes.setTrue();
@@ -552,6 +555,7 @@ public class QueryEngine
       // if the number of dense node is greater than the nodeNumberThreshold, do the prefix node filter node first
       if ( intersectingNodeStatistic.denseNodeNumber >= visitingNodeSizeThreshold )
       {
+        //System.out.println("No. of Dense Node Greater");
         // prefix node filter
     	  readIntersectingNodeStatsOfRelaxedRegion(query, hasRetrievedIntersectingNodesOfRelaxedRegion, intersectingNodeStatsMapOfRelaxedRegion);
     	  prefixNodeFilter(query, doPrefixNodeFilter, memPosQgramCountPairInvertedMap, memQgramTokenCountPairInvertedMap, doSubstringNodeFilterInPrefixQuery, intersectingNodeStatsMapOfRelaxedRegion, prefixNodeCandidateCountMap, substringNodeCandidateCountMap);
@@ -565,7 +569,7 @@ public class QueryEngine
         		  String nodeHilbertCode=entry.getKey();
         		  NodeStatistic nodeStats = intersectingNodeStatistic.get(nodeHilbertCode);
         		  if(nodeStats!=null){
-        			  this.prefixSingleNodeProcess(query, nodeHilbertCode, nodeStats, prefixResultFromInfrequentQgram, visitedObjectMap, prefixResultMap, prefixResultFromNodeLevelJoin, memHilbPosQgramInvertedMap, memHilbQgramTokenInvertedMap);
+        			  this.prefixSingleNodeProcess(query, nodeHilbertCode, nodeStats, prefixResult, visitedObjectMap, prefixResultMap, prefixResultFromNodeLevelJoin, memHilbPosQgramInvertedMap, memHilbQgramTokenInvertedMap);
         		  }
         	  }
           }
@@ -574,12 +578,14 @@ public class QueryEngine
       // if the number of dense node is not greater than the nodeNumberThreshold,
       // no need to do the prefix node join, directly visit each node
       else{
+          //System.out.println("No. of Dense node not greater");
     	  Iterator<Entry<String, NodeStatistic>> intersectingNodeItr = intersectingNodeStatistic.entrySet().iterator();
     	  while(intersectingNodeItr.hasNext()){
     		  Entry<String, NodeStatistic> entry = intersectingNodeItr.next();
     		  String nodeHilbertCode = entry.getKey();
     		  NodeStatistic nodeStats = entry.getValue();
-    		  this.prefixSingleNodeProcess(query, nodeHilbertCode, nodeStats, prefixResultFromInfrequentQgram, visitedObjectMap, prefixResultMap, prefixResultFromNodeLevelJoin, memHilbPosQgramInvertedMap, memHilbQgramTokenInvertedMap);
+    		  this.prefixSingleNodeProcess(query, nodeHilbertCode, nodeStats, prefixResult, visitedObjectMap, prefixResultMap, prefixResultFromNodeLevelJoin, memHilbPosQgramInvertedMap, memHilbQgramTokenInvertedMap);
+    		  //this.prefixSingleNodeProcess(query, nodeStats, nodeHilbertCode, prefixResultMap);
     	  }
       }
       
