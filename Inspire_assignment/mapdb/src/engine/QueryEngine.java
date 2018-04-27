@@ -666,9 +666,19 @@ public class QueryEngine
 	    // do not need to do node filter
 	    if ( intersectingNodeStatsMap.denseNodeNumber < visitingNodeSizeThreshold )
 	    {
-	      Iterator< Entry< String, NodeStatistic >> itr = intersectingNodeStatsMap.entrySet().iterator();      
+	      Iterator< Entry< String, NodeStatistic >> itr = intersectingNodeStatsMap.entrySet().iterator();    
+	      while (itr.hasNext()) {
+	    	  Entry < String, NodeStatistic > entry = itr.next();
+	    	  String nodeHilbertCode = entry.getKey();
+	    	  NodeStatistic nodeStats = entry.getValue();
+	    	  
+	    	  // approximate prefix query in node	 
+		      this.approximatePrefixQueryInSingleNode(query, approximatePrefixResult, nodeHilbertCode, nodeStats,
+		    		  memObjectMap, memInfreqPosQgramInvertedMap, memInfreqQgramTokenInvertedMap, memHilbPosQgramInvertedMap, 
+		    		  memHilbQgramTokenInvertedMap, qgramFilter, mergeSkipOperator, approximateSubstringCandidateMap);
+	      }
 	     	       	        
-	        // approximate prefix query in node	      
+	        
 	    }
 	    
 	    // need to do node filterskenlton
@@ -676,6 +686,9 @@ public class QueryEngine
 	    {
 	      TreeSet< String > approximatePrefixNodeCandidates = new TreeSet< String >();
 	      
+	      this.approximatePrefixNodeFilter(query, tokenMinMatchThreshold, intersectingNodeStatsMap, 
+	    		  doApproximateSubstringNodeFilter, approximatePrefixNodeCandidates, approximateSubstringNodeCandidates, 
+	    		  memPosQgramCountPairInvertedMap, memQgramTokenCountPairInvertedMap);
 	      // node filter
 	      
 
@@ -684,6 +697,11 @@ public class QueryEngine
 	      {
 	        for ( String nodeHilbertCode : approximatePrefixNodeCandidates )
 	        {
+	        	NodeStatistic nodeStats = intersectingNodeStatsMap.get(nodeHilbertCode);
+	        	
+	        	this.approximatePrefixQueryInSingleNode(query, approximatePrefixResult, nodeHilbertCode, nodeStats, 
+	        			memObjectMap, memInfreqPosQgramInvertedMap, memInfreqQgramTokenInvertedMap, memHilbPosQgramInvertedMap, 
+	        			memHilbQgramTokenInvertedMap, qgramFilter, mergeSkipOperator, approximateSubstringCandidateMap);
 	         
 	        }
 	      }
